@@ -1,17 +1,21 @@
-#include <cstdlib>
-
 #include <lsp/connection.h>
 #include <lsp/io/standardio.h>
 #include <lsp/messagehandler.h>
 #include <lsp/messages.h>
 
+#include "run.h"
+
 int main(int argc, char *argv[]) {
   auto connection = lsp::Connection(lsp::io::standardIO());
   auto messageHandler = lsp::MessageHandler(connection);
+#ifndef NDEBUG
+  Run("");
+#endif
 
   messageHandler
       .add<lsp::requests::Initialize>(
           [](lsp::requests::Initialize::Params &&params) {
+            Run("");
             return lsp::requests::Initialize::Result{
                 .capabilities =
                     {
@@ -67,7 +71,7 @@ int main(int argc, char *argv[]) {
                                 .character = 2,
                             },
                     },
-                .target = {"/home/wzy/README.md"},
+                .target = lsp::Uri::parse("/home/wzy/README.md"),
             }}};
           });
 

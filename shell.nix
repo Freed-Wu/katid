@@ -7,6 +7,10 @@ mkShell {
     xmake
     pkg-config
 
+    # kati
+    git
+
+    # lsp-framework
     cmake
     ninja
     curl

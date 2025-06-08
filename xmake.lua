@@ -1,47 +1,71 @@
 -- luacheck: ignore 111 113 143
 ---@diagnostic disable: undefined-global, undefined-field
-package("lsp-framework")
-do
-    set_homepage("https://github.com/leon-bckl/lsp-framework")
-    set_description("lsp-framework - Language Server Protocol implementation in C++")
+includes("packages/l/lsp-framework")
+includes("packages/k/kati")
+add_rules("mode.debug", "mode.release")
 
-    set_urls("https://github.com/leon-bckl/lsp-framework/archive/refs/tags/$(version).tar.gz",
-        "https://github.com/leon-bckl/lsp-framework.git")
-    add_versions("1.0.1", "07f924d851896a2d424d554d20820483f8458aa1ff907bb68657b0d2d0bd0d13")
-
-    add_deps("cmake", "ninja")
-
-    on_install(function(package)
-        -- https://github.com/leon-bckl/lsp-framework/pull/10
-        io.replace("CMakeLists.txt", "add_library(lsp STATIC)", [[
-option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
-add_library(lsp)
-install(TARGETS lsp LIBRARY)
-include(GNUInstallDirs)
-install(FILES
-	${LSP_GENERATED_FILES_DIR}/lsp/types.h
-	${LSP_GENERATED_FILES_DIR}/lsp/messages.h
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lsp)
-install(DIRECTORY lsp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-        ]], {plain = true})
-        import("package.tools.cmake").install(package, {'-GNinja', '-DBUILD_SHARED_LIBS=ON'})
-    end)
-end
-package_end()
 add_requires("lsp-framework")
+-- add a static library
+add_requires("kati", { system = false })
 set_languages("c++20")
 
 target("katid")
 do
     set_kind("binary")
+    add_defines("NOLOG")
     add_files("src/*.cc")
+    add_installfiles("assets/Makefile", { prefixdir = "share/katid" })
     add_packages("lsp-framework")
-    on_load(
-        function(target)
-            if not os.isdir("kati") then
-                import("devel.git")
-                git.clone("https://github.com/Freed-Wu/kati", { depth = 1, branch="meson" })
+    if not is_mode("debug") then
+        add_packages("kati")
+    else
+        add_includedirs("kati/src")
+        add_deps("kati")
+        on_load(
+            function(target)
+                if not os.isdir("kati") then
+                    import("devel.git")
+                    git.clone("https://github.com/google/kati", { depth = 1 })
+                end
             end
-        end
+        )
+    end
+end
+
+target("kati")
+do
+    set_kind("static")
+    add_defines("NOLOG")
+    add_includedirs("kati/src")
+    set_optimize("fast")
+    add_installfiles("kati/src/*.h", { prefixdir = "include" })
+    add_files(
+        "kati/src/affinity.cc",
+        "kati/src/command.cc",
+        "kati/src/dep.cc",
+        "kati/src/eval.cc",
+        "kati/src/exec.cc",
+        "kati/src/expr.cc",
+        "kati/src/file.cc",
+        "kati/src/file_cache.cc",
+        "kati/src/fileutil.cc",
+        "kati/src/find.cc",
+        "kati/src/flags.cc",
+        "kati/src/func.cc",
+        "kati/src/io.cc",
+        "kati/src/log.cc",
+        "kati/src/ninja.cc",
+        "kati/src/parser.cc",
+        "kati/src/regen.cc",
+        "kati/src/regen_dump.cc",
+        "kati/src/rule.cc",
+        "kati/src/stats.cc",
+        "kati/src/stmt.cc",
+        "kati/src/stringprintf.cc",
+        "kati/src/strutil.cc",
+        "kati/src/symtab.cc",
+        "kati/src/timeutil.cc",
+        "kati/src/var.cc",
+        "kati/src/version_unknown.cc"
     )
 end
