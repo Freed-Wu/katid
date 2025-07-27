@@ -14,7 +14,10 @@ do
     add_deps("cmake", "ninja")
 
     on_install(function(package)
-        import("package.tools.cmake").install(package, {'-GNinja'})
+        import("package.tools.cmake").install(package, {
+            '-GNinja',
+            '-DBUILD_SHARED_LIBS=' .. (package:config("shared") and 'ON' or "OFF")
+        })
     end)
 end
 package_end()
